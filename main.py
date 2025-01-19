@@ -2,8 +2,10 @@ from typing import Union
 from fast_flights import FlightData, Passengers, Result, get_flights
 from fastapi import FastAPI
 from pydantic import BaseModel
-import asyncio
+import logging
 
+logger = logging.getLogger('uvicorn.info')
+logger.setLevel(logging.INFO)
 app = FastAPI()
 
 class Flight(BaseModel):
@@ -42,6 +44,7 @@ async def fetch_flights(flight: Flight):
 
 @app.post("/flight/")
 async def create_flight(flight: Flight):
+    logger.info(flight)
     try:
         result = await fetch_flights(flight=flight)
         response = {
