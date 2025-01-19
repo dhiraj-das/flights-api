@@ -2,6 +2,7 @@ from typing import Union
 from fast_flights import FlightData, Passengers, Result, get_flights
 from fastapi import FastAPI
 from pydantic import BaseModel
+import asyncio
 
 app = FastAPI()
 
@@ -27,8 +28,7 @@ async def search_flight():
     )
     return result
 
-@app.post("/flight/")
-async def create_flight(flight: Flight):
+async def fetch_flights(flight: Flight):
     result: Result = get_flights(
         flight_data=[
             FlightData(date=flight.start_date, from_airport=flight.origin, to_airport=flight.destination)
@@ -38,13 +38,19 @@ async def create_flight(flight: Flight):
         passengers=Passengers(adults=1, children=0, infants_in_seat=0, infants_on_lap=0),
         fetch_mode="fallback",
     )
+    return result
 
-    response = {
-        "price_type": result.current_price,
-        "flights": result.flights[0:3]
-    }
-
-    return response
+@app.post("/flight/")
+async def create_flight(flight: Flight):
+    try:
+        result = await fetch_flights(flight=flight)
+        response = {
+            "price_type": result.current_price,
+            "flights": result.flights[0:3]
+        }
+        return response
+    except Exception as e:
+        return {"error": "Request Timeout"}
 
 
 @app.get("/items/{item_id}")
